@@ -20,8 +20,22 @@ public class QuizQuestion {
     @Column(nullable = false)
     private String questionText;
 
+    @ElementCollection
+    @CollectionTable(name = "question_question_correct_answers",
+            joinColumns = @JoinColumn(name = "quiz_question_id"))
+    @Column(name = "correct_answer")
+    private List<String> correctAnswers;
+
+    @Column(name = "correct_answer_explanation")
+    private String correctAnswerExplanation; // To provide hints for correct answer(optional)
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String correctAnswer;
+    private QuestionType questionType; // Add the questionType field
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DifficultyLevel difficultyLevel;
 
     @OneToMany(mappedBy = "quizQuestion")
     private List<Answer> answers;

@@ -23,6 +23,14 @@ public class Quiz {
     @Column(nullable = false)
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GradeLevel gradeLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Subject subject;
+
     @ManyToOne
     @JoinColumn(name = "created_by")
     private User createdBy;

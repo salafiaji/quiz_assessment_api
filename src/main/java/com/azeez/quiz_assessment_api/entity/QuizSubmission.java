@@ -27,6 +27,9 @@ public class QuizSubmission {
     private Quiz quiz;
 
     @Column(nullable = false)
+    private LocalDateTime startedAt;
+
+    @Column(nullable = false)
     private LocalDateTime submittedAt;
 
     @Column(nullable = false)
