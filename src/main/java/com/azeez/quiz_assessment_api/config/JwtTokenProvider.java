@@ -1,21 +1,28 @@
 package com.azeez.quiz_assessment_api.config;
 
+import com.azeez.quiz_assessment_api.entity.BlacklistedToken;
+import com.azeez.quiz_assessment_api.repository.BlacklistedTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecurityException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
+
+    @Autowired
+    private BlacklistedTokenRepository blacklistedTokenRepository;
 
     @Value("${app.jwt-secret}")
     private String jwtSecret;
@@ -52,6 +59,11 @@ public class JwtTokenProvider {
     }
 
     public boolean validateToken(String token) {
+        // Check if the token is blacklisted
+        if (isTokenBlacklisted(token)) {
+            return false;
+        }
+
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key())
@@ -61,5 +73,30 @@ public class JwtTokenProvider {
         } catch (ExpiredJwtException | IllegalArgumentException | SecurityException | MalformedJwtException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isTokenBlacklisted(String token) {
+        return blacklistedTokenRepository.findByToken(token).isPresent();
+    }
+
+
+    // Method to extract the token from the request header
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+
+    // Method to invalidate the token by adding it to the blacklist
+    public void invalidateToken(String token) {
+        // 1. Create a BlacklistedToken entity
+        BlacklistedToken blacklistedToken = new BlacklistedToken();
+        blacklistedToken.setToken(token);
+        blacklistedToken.setExpirationDate(new Date(System.currentTimeMillis() + jwtExpirationDate)); // Set expiration date
+
+        // 2. Save the BlacklistedToken to the database
+        blacklistedTokenRepository.save(blacklistedToken);
     }
 }
